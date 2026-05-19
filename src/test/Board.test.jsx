@@ -165,6 +165,69 @@ describe('Board', () => {
     vi.restoreAllMocks()
   })
 
+  it('alerts and does not insert when column limit is reached', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    const tenColumns = Array.from({ length: 10 }, (_, i) => ({
+      id: `col-${i}`, board_id: 'board-1', title: `Col ${i}`, color: '#1D9E75', position: i,
+    }))
+    supabase.from.mockImplementation(table => {
+      if (table === 'columns') {
+        const chain = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), insert: vi.fn(), update: vi.fn(), delete: vi.fn() }
+        chain.select.mockReturnValue(chain)
+        chain.eq.mockReturnValue(chain)
+        chain.order.mockResolvedValue({ data: tenColumns })
+        chain.insert.mockReturnValue(chain)
+        chain.update.mockReturnValue(chain)
+        chain.delete.mockReturnValue(chain)
+        return chain
+      }
+      if (table === 'cards') {
+        const chain = { select: vi.fn(), eq: vi.fn(), order: vi.fn() }
+        chain.select.mockReturnValue(chain)
+        chain.eq.mockReturnValue(chain)
+        chain.order.mockResolvedValue({ data: [] })
+        return chain
+      }
+    })
+    render(<Board boardId="board-1" board={board} />)
+    await waitFor(() => screen.getByText('Col 0'))
+    await userEvent.click(screen.getByRole('button', { name: /\+ add column/i }))
+    await userEvent.type(screen.getByPlaceholderText('Column name'), 'Overflow col')
+    await userEvent.click(screen.getByRole('button', { name: /^add column$/i }))
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('10 columns'))
+    vi.restoreAllMocks()
+  })
+
+  it('disables add card and shows Column full when card limit is reached', async () => {
+    const thirtyCards = Array.from({ length: 30 }, (_, i) => ({
+      id: `card-${i}`, board_id: 'board-1', column_id: 'col-1', text: `Card ${i}`, votes: 0, reactions: {},
+    }))
+    supabase.from.mockImplementation(table => {
+      if (table === 'columns') {
+        const chain = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), insert: vi.fn(), update: vi.fn(), delete: vi.fn() }
+        chain.select.mockReturnValue(chain)
+        chain.eq.mockReturnValue(chain)
+        chain.order.mockResolvedValue({ data: mockColumns })
+        chain.insert.mockReturnValue(chain)
+        chain.update.mockReturnValue(chain)
+        chain.delete.mockReturnValue(chain)
+        return chain
+      }
+      if (table === 'cards') {
+        const chain = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), insert: vi.fn() }
+        chain.select.mockReturnValue(chain)
+        chain.eq.mockReturnValue(chain)
+        chain.order.mockResolvedValue({ data: thirtyCards })
+        chain.insert.mockResolvedValue({ data: null })
+        return chain
+      }
+    })
+    render(<Board boardId="board-1" board={board} />)
+    await waitFor(() => screen.getByText('Went well'))
+    const fullBtn = screen.getAllByText('Column full')[0]
+    expect(fullBtn).toBeDisabled()
+  })
+
   it('opens AddColumnModal when Add column is clicked', async () => {
     render(<Board boardId="board-1" board={board} />)
     await waitFor(() => screen.getByText('Went well'))

@@ -76,6 +76,7 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
               value={inputVal}
               onChange={e => setInputVal(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd() } if (e.key === 'Escape') setInputOpen(false) }}
+              maxLength={500}
               autoFocus
               rows={3}
             />
@@ -85,8 +86,13 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
             </div>
           </div>
         ) : (
-          <button className="add-card-trigger" onClick={() => setInputOpen(true)}>
-            + Add a card
+          <button
+            className="add-card-trigger"
+            onClick={() => setInputOpen(true)}
+            disabled={cards.length >= 30}
+            title={cards.length >= 30 ? 'Column is full (30 cards max)' : undefined}
+          >
+            {cards.length >= 30 ? 'Column full' : '+ Add a card'}
           </button>
         )}
       </div>

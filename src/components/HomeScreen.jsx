@@ -30,6 +30,7 @@ export default function HomeScreen({ onCreate, theme, onToggleTheme }) {
             placeholder="Name your board (e.g. Sprint 42)"
             value={name}
             onChange={e => setName(e.target.value)}
+            maxLength={60}
             autoFocus
           />
           <button className="home-btn" type="submit" disabled={loading || !name.trim()}>

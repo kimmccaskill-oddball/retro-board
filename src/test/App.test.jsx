@@ -92,6 +92,19 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByText('Sprint 42')).toBeInTheDocument())
   })
 
+  it('blocks board creation when rate limit is exceeded', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    const now = Date.now()
+    localStorage.setItem('retro-create-times', JSON.stringify([now, now, now, now, now]))
+    render(<App />)
+    await waitFor(() => screen.getByPlaceholderText(/name your board/i))
+    await userEvent.type(screen.getByPlaceholderText(/name your board/i), 'Sprint 42')
+    await userEvent.click(screen.getByRole('button', { name: /create board/i }))
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('too many boards'))
+    localStorage.removeItem('retro-create-times')
+    vi.restoreAllMocks()
+  })
+
   it('shows an error alert if board creation fails', async () => {
     supabase.from.mockImplementation(() => stubBoards(null, { message: 'DB error' }))
 

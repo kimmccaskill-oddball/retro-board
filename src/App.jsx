@@ -7,11 +7,21 @@ import './App.css'
 
 const SLUG_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const RATE_LIMIT = { max: 5, windowMs: 60 * 60 * 1000 } // 5 boards per hour
 
 function generateSlug(length = 6) {
   return Array.from(crypto.getRandomValues(new Uint8Array(length)))
     .map(b => SLUG_CHARS[b % SLUG_CHARS.length])
     .join('')
+}
+
+function checkRateLimit() {
+  const now = Date.now()
+  const raw = localStorage.getItem('retro-create-times')
+  const times = raw ? JSON.parse(raw).filter(t => now - t < RATE_LIMIT.windowMs) : []
+  if (times.length >= RATE_LIMIT.max) return false
+  localStorage.setItem('retro-create-times', JSON.stringify([...times, now]))
+  return true
 }
 
 export default function App() {
@@ -50,6 +60,10 @@ export default function App() {
   }
 
   async function createBoard(name) {
+    if (!checkRateLimit()) {
+      alert('You\'ve created too many boards. Please wait an hour before creating another.')
+      return
+    }
     let data, error, attempts = 0
     do {
       const slug = generateSlug()

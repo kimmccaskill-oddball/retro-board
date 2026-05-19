@@ -100,6 +100,11 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
   }, [boardId])
 
   async function addCard(columnId, text) {
+    const columnCards = cards.filter(c => c.column_id === columnId)
+    if (columnCards.length >= 30) {
+      alert('This column has reached the maximum of 30 cards.')
+      return
+    }
     const { error } = await supabase.from('cards').insert({
       board_id: boardId,
       column_id: columnId,
@@ -159,6 +164,10 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
   }
 
   async function addColumn(title, color) {
+    if (columns.length >= 10) {
+      alert('This board has reached the maximum of 10 columns.')
+      return
+    }
     const maxPos = columns.reduce((m, c) => Math.max(m, c.position), -1)
     const { error } = await supabase.from('columns').insert({
       board_id: boardId,
