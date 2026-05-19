@@ -20,7 +20,7 @@ vi.mock('../lib/supabase', () => {
 
 import { supabase } from '../lib/supabase'
 
-const mockBoard = { id: 'board-abc', name: 'Sprint 42' }
+const mockBoard = { id: 'board-uuid', name: 'Sprint 42', slug: 'abc123' }
 
 function stubBoards(board, error = null) {
   const chain = { select: vi.fn(), insert: vi.fn(), eq: vi.fn(), single: vi.fn() }
@@ -55,7 +55,7 @@ describe('App', () => {
     await waitFor(() => expect(screen.getByPlaceholderText(/name your board/i)).toBeInTheDocument())
   })
 
-  it('creates a board and navigates to it', async () => {
+  it('creates a board and uses slug in the URL hash', async () => {
     supabase.from.mockImplementation(table => {
       if (table === 'boards') return stubBoards(mockBoard)
       return stubEmptyTable()
@@ -67,7 +67,29 @@ describe('App', () => {
     await userEvent.click(screen.getByRole('button', { name: /create board/i }))
 
     await waitFor(() => expect(screen.getByText('Sprint 42')).toBeInTheDocument())
-    expect(window.location.hash).toBe('#board-abc')
+    expect(window.location.hash).toBe('#abc123')
+  })
+
+  it('loads a board by slug from the URL hash', async () => {
+    window.location.hash = '#abc123'
+    supabase.from.mockImplementation(table => {
+      if (table === 'boards') return stubBoards(mockBoard)
+      return stubEmptyTable()
+    })
+
+    render(<App />)
+    await waitFor(() => expect(screen.getByText('Sprint 42')).toBeInTheDocument())
+  })
+
+  it('loads a legacy board by UUID from the URL hash', async () => {
+    window.location.hash = '#550e8400-e29b-41d4-a716-446655440000'
+    supabase.from.mockImplementation(table => {
+      if (table === 'boards') return stubBoards(mockBoard)
+      return stubEmptyTable()
+    })
+
+    render(<App />)
+    await waitFor(() => expect(screen.getByText('Sprint 42')).toBeInTheDocument())
   })
 
   it('shows an error alert if board creation fails', async () => {
@@ -81,17 +103,6 @@ describe('App', () => {
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('DB error')))
     vi.restoreAllMocks()
-  })
-
-  it('loads a board from the URL hash on mount', async () => {
-    window.location.hash = '#board-abc'
-    supabase.from.mockImplementation(table => {
-      if (table === 'boards') return stubBoards(mockBoard)
-      return stubEmptyTable()
-    })
-
-    render(<App />)
-    await waitFor(() => expect(screen.getByText('Sprint 42')).toBeInTheDocument())
   })
 
   it('clears the hash and shows HomeScreen if the board is not found', async () => {

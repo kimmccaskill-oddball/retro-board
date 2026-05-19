@@ -3,8 +3,10 @@
 create table boards (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  slug text unique,
   created_at timestamptz default now()
 );
+create unique index boards_slug_idx on boards(slug);
 
 create table columns (
   id uuid primary key default gen_random_uuid(),
