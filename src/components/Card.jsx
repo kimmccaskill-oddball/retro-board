@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-const EMOJIS = ['👍', '❤️', '😄', '🎉', '🤔', '😬']
+const EMOJIS = ['👍', '👎', '❤️', '😄', '🎉', '🤔', '😬']
 
 export default function Card({ card, color, hasVoted, myReactions, onDelete, onVote, onReact }) {
   const [pickerOpen, setPickerOpen] = useState(false)
