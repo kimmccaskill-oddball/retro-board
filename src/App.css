@@ -159,6 +159,55 @@ body {
   margin-top: 1rem;
   line-height: 1.5;
 }
+.recent-boards {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1.25rem;
+  text-align: left;
+}
+.recent-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.recent-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recent-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: var(--font);
+}
+.recent-item:hover { background: var(--surface-2); }
+.recent-name {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recent-time {
+  font-size: 11px;
+  color: var(--text-3);
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
 
 /* Board header */
 .board-page {

@@ -7,7 +7,7 @@ import './App.css'
 
 const SLUG_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const RATE_LIMIT = { max: 5, windowMs: 60 * 60 * 1000 } // 5 boards per hour
+const RATE_LIMIT = { max: 5, windowMs: 60 * 60 * 1000 }
 
 function generateSlug(length = 6) {
   return Array.from(crypto.getRandomValues(new Uint8Array(length)))
@@ -24,11 +24,23 @@ function checkRateLimit() {
   return true
 }
 
+function getRecentBoards() {
+  try { return JSON.parse(localStorage.getItem('retro-recent-boards') || '[]') }
+  catch { return [] }
+}
+
+function saveRecentBoard(board) {
+  const recent = getRecentBoards().filter(b => b.slug !== (board.slug || board.id))
+  const entry = { slug: board.slug || board.id, name: board.name, visitedAt: Date.now() }
+  localStorage.setItem('retro-recent-boards', JSON.stringify([entry, ...recent].slice(0, 10)))
+}
+
 export default function App() {
   const [boardId, setBoardId] = useState(null)
   const { theme, toggle } = useTheme()
   const [board, setBoard] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [recentBoards, setRecentBoards] = useState(getRecentBoards)
 
   useEffect(() => {
     const hash = window.location.hash.replace('#', '')
@@ -41,7 +53,6 @@ export default function App() {
 
   async function loadBoard(hash) {
     setLoading(true)
-    // Legacy support: old links used the UUID directly
     const column = UUID_RE.test(hash) ? 'id' : 'slug'
     const { data, error } = await supabase
       .from('boards')
@@ -54,6 +65,8 @@ export default function App() {
       setLoading(false)
       return
     }
+    saveRecentBoard(data)
+    setRecentBoards(getRecentBoards())
     setBoardId(data.id)
     setBoard(data)
     setLoading(false)
@@ -73,9 +86,11 @@ export default function App() {
         .select()
         .single())
       attempts++
-    } while (error?.code === '23505' && attempts < 5) // retry on slug collision
+    } while (error?.code === '23505' && attempts < 5)
 
     if (error) { alert(`Error creating board: ${error.message}`); return }
+    saveRecentBoard(data)
+    setRecentBoards(getRecentBoards())
     window.location.hash = data.slug
     setBoardId(data.id)
     setBoard(data)
@@ -87,7 +102,15 @@ export default function App() {
     </div>
   )
 
-  if (!boardId) return <HomeScreen onCreate={createBoard} theme={theme} onToggleTheme={toggle} />
+  if (!boardId) return (
+    <HomeScreen
+      onCreate={createBoard}
+      recentBoards={recentBoards}
+      onOpenBoard={hash => loadBoard(hash)}
+      theme={theme}
+      onToggleTheme={toggle}
+    />
+  )
 
   return <Board boardId={boardId} board={board} theme={theme} onToggleTheme={toggle} />
 }

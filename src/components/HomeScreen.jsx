@@ -1,6 +1,17 @@
 import { useState } from 'react'
 
-export default function HomeScreen({ onCreate, theme, onToggleTheme }) {
+function timeAgo(ts) {
+  const diff = Date.now() - ts
+  const mins = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  if (hours < 24) return `${hours}h ago`
+  return `${days}d ago`
+}
+
+export default function HomeScreen({ onCreate, recentBoards = [], onOpenBoard, theme, onToggleTheme }) {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -38,6 +49,22 @@ export default function HomeScreen({ onCreate, theme, onToggleTheme }) {
           </button>
         </form>
         <p className="home-hint">A shareable link will be generated. Anyone with the link can collaborate.</p>
+
+        {recentBoards.length > 0 && (
+          <div className="recent-boards">
+            <p className="recent-label">Recent boards</p>
+            <ul className="recent-list">
+              {recentBoards.map(b => (
+                <li key={b.slug}>
+                  <button className="recent-item" onClick={() => onOpenBoard(b.slug)}>
+                    <span className="recent-name">{b.name}</span>
+                    <span className="recent-time">{timeAgo(b.visitedAt)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   )
