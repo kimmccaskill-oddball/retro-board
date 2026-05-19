@@ -17,6 +17,7 @@ function renderColumn(overrides = {}) {
     onVoteCard: vi.fn(),
     onUpdateColumn: vi.fn(),
     onDeleteColumn: vi.fn(),
+    votedCards: new Set(),
     ...overrides,
   }
   return { ...render(<Column {...props} />), props }

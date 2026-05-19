@@ -9,12 +9,31 @@ const DEFAULT_COLUMNS = [
   { title: 'Action items', color: '#185FA5' },
 ]
 
+function getUserId() {
+  let id = localStorage.getItem('retro-user-id')
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem('retro-user-id', id)
+  }
+  return id
+}
+
+function getVotedCards() {
+  try { return new Set(JSON.parse(localStorage.getItem('retro-voted-cards') || '[]')) }
+  catch { return new Set() }
+}
+
+function saveVotedCards(set) {
+  localStorage.setItem('retro-voted-cards', JSON.stringify([...set]))
+}
+
 export default function Board({ boardId, board }) {
   const [columns, setColumns] = useState([])
   const [cards, setCards] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddCol, setShowAddCol] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [votedCards, setVotedCards] = useState(getVotedCards)
 
   useEffect(() => {
     initBoard()
@@ -96,8 +115,19 @@ export default function Board({ boardId, board }) {
   }
 
   async function voteCard(card) {
-    const { error } = await supabase.from('cards').update({ votes: card.votes + 1 }).eq('id', card.id)
-    if (error) alert(`Error voting: ${error.message}`)
+    const hasVoted = votedCards.has(card.id)
+    const newVotes = hasVoted ? card.votes - 1 : card.votes + 1
+    const newVotedCards = new Set(votedCards)
+    if (hasVoted) newVotedCards.delete(card.id)
+    else newVotedCards.add(card.id)
+    setVotedCards(newVotedCards)
+    saveVotedCards(newVotedCards)
+    const { error } = await supabase.from('cards').update({ votes: newVotes }).eq('id', card.id)
+    if (error) {
+      setVotedCards(votedCards)
+      saveVotedCards(votedCards)
+      alert(`Error voting: ${error.message}`)
+    }
   }
 
   async function addColumn(title, color) {
@@ -168,6 +198,7 @@ export default function Board({ boardId, board }) {
               onVoteCard={voteCard}
               onUpdateColumn={updateColumn}
               onDeleteColumn={deleteColumn}
+              votedCards={votedCards}
             />
           ))}
         </div>

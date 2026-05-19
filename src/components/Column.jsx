@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Card from './Card'
 
-export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteCard, onUpdateColumn, onDeleteColumn }) {
+export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteCard, onUpdateColumn, onDeleteColumn, votedCards }) {
   const [inputOpen, setInputOpen] = useState(false)
   const [inputVal, setInputVal] = useState('')
   const [editing, setEditing] = useState(false)
@@ -63,6 +63,7 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
             key={card.id}
             card={card}
             color={column.color}
+            hasVoted={votedCards.has(card.id)}
             onDelete={() => onDeleteCard(card.id)}
             onVote={() => onVoteCard(card)}
           />

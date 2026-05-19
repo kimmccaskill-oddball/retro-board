@@ -333,6 +333,12 @@ body {
   border-color: color-mix(in srgb, var(--vote-color) 40%, transparent);
   color: var(--vote-color);
 }
+.vote-btn.my-vote {
+  background: color-mix(in srgb, var(--vote-color) 25%, transparent);
+  border-color: var(--vote-color);
+  color: var(--vote-color);
+  font-weight: 600;
+}
 .delete-card-btn {
   font-size: 12px;
   background: none;
