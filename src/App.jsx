@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import Board from './components/Board'
 import HomeScreen from './components/HomeScreen'
 import { supabase } from './lib/supabase'
+import { useTheme } from './lib/useTheme'
 import './App.css'
 
 export default function App() {
   const [boardId, setBoardId] = useState(null)
+  const { theme, toggle } = useTheme()
   const [board, setBoard] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -55,7 +57,7 @@ export default function App() {
     </div>
   )
 
-  if (!boardId) return <HomeScreen onCreate={createBoard} />
+  if (!boardId) return <HomeScreen onCreate={createBoard} theme={theme} onToggleTheme={toggle} />
 
-  return <Board boardId={boardId} board={board} />
+  return <Board boardId={boardId} board={board} theme={theme} onToggleTheme={toggle} />
 }

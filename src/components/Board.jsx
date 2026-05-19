@@ -27,7 +27,7 @@ function saveVotedCards(set) {
   localStorage.setItem('retro-voted-cards', JSON.stringify([...set]))
 }
 
-export default function Board({ boardId, board }) {
+export default function Board({ boardId, board, theme, onToggleTheme }) {
   const [columns, setColumns] = useState([])
   const [cards, setCards] = useState([])
   const [loading, setLoading] = useState(true)
@@ -179,6 +179,9 @@ export default function Board({ boardId, board }) {
         <div className="board-header-right">
           <button className="header-btn" onClick={() => setShowAddCol(true)}>
             + Add column
+          </button>
+          <button className="header-btn theme-toggle-btn" onClick={onToggleTheme} title="Toggle theme">
+            {theme === 'dark' ? '☀︎' : '☽'}
           </button>
           <button className="header-btn" onClick={() => window.print()}>
             ↓ Export PDF

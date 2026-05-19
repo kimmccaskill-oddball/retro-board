@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function HomeScreen({ onCreate }) {
+export default function HomeScreen({ onCreate, theme, onToggleTheme }) {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -14,6 +14,9 @@ export default function HomeScreen({ onCreate }) {
 
   return (
     <div className="home-screen">
+      <button className="theme-toggle" onClick={onToggleTheme} title="Toggle theme">
+        {theme === 'dark' ? '☀︎' : '☽'}
+      </button>
       <div className="home-card">
         <div className="home-logo">
           <div className="logo-mark">R</div>
