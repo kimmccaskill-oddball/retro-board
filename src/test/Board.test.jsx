@@ -112,6 +112,58 @@ describe('Board', () => {
     vi.restoreAllMocks()
   })
 
+  it('shows an alert when addCard fails', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<Board boardId="board-1" board={board} />)
+    await waitFor(() => screen.getByText('Went well'))
+
+    supabase.from.mockImplementation(() => {
+      const chain = { insert: vi.fn() }
+      chain.insert.mockResolvedValue({ error: { message: 'Insert failed' } })
+      return chain
+    })
+
+    await userEvent.click(screen.getAllByText('+ Add a card')[0])
+    await userEvent.type(screen.getByPlaceholderText(/what's on your mind/i), 'New card')
+    await userEvent.click(screen.getByRole('button', { name: /add card/i }))
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Insert failed')))
+    vi.restoreAllMocks()
+  })
+
+  it('rolls back card delete and shows alert on failure', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<Board boardId="board-1" board={board} />)
+    await waitFor(() => screen.getByText('Great sprint'))
+
+    const chain = { delete: vi.fn(), eq: vi.fn() }
+    chain.delete.mockReturnValue(chain)
+    chain.eq.mockResolvedValue({ error: { message: 'Delete failed' } })
+    supabase.from.mockReturnValue(chain)
+
+    await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Delete failed')))
+    expect(screen.getByText('Great sprint')).toBeInTheDocument()
+    vi.restoreAllMocks()
+  })
+
+  it('shows an alert when addColumn fails', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<Board boardId="board-1" board={board} />)
+    await waitFor(() => screen.getByText('Went well'))
+
+    supabase.from.mockImplementation(() => {
+      const chain = { insert: vi.fn() }
+      chain.insert.mockResolvedValue({ error: { message: 'Column insert failed' } })
+      return chain
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: /\+ add column/i }))
+    await userEvent.type(screen.getByPlaceholderText('Column name'), 'New col')
+    await userEvent.click(screen.getByRole('button', { name: /^add column$/i }))
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Column insert failed')))
+    vi.restoreAllMocks()
+  })
+
   it('opens AddColumnModal when Add column is clicked', async () => {
     render(<Board boardId="board-1" board={board} />)
     await waitFor(() => screen.getByText('Went well'))

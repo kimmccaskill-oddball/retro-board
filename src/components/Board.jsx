@@ -77,31 +77,38 @@ export default function Board({ boardId, board }) {
   }, [boardId])
 
   async function addCard(columnId, text) {
-    await supabase.from('cards').insert({
+    const { error } = await supabase.from('cards').insert({
       board_id: boardId,
       column_id: columnId,
       text,
       votes: 0,
     })
+    if (error) alert(`Error adding card: ${error.message}`)
   }
 
   async function deleteCard(cardId) {
     setCards(prev => prev.filter(c => c.id !== cardId))
-    await supabase.from('cards').delete().eq('id', cardId)
+    const { error } = await supabase.from('cards').delete().eq('id', cardId)
+    if (error) {
+      setCards(prev => [...prev, cards.find(c => c.id === cardId)].filter(Boolean))
+      alert(`Error deleting card: ${error.message}`)
+    }
   }
 
   async function voteCard(card) {
-    await supabase.from('cards').update({ votes: card.votes + 1 }).eq('id', card.id)
+    const { error } = await supabase.from('cards').update({ votes: card.votes + 1 }).eq('id', card.id)
+    if (error) alert(`Error voting: ${error.message}`)
   }
 
   async function addColumn(title, color) {
     const maxPos = columns.reduce((m, c) => Math.max(m, c.position), -1)
-    await supabase.from('columns').insert({
+    const { error } = await supabase.from('columns').insert({
       board_id: boardId,
       title,
       color,
       position: maxPos + 1,
     })
+    if (error) alert(`Error adding column: ${error.message}`)
   }
 
   async function updateColumn(colId, updates) {
