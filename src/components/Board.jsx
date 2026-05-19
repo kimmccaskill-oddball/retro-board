@@ -86,6 +86,7 @@ export default function Board({ boardId, board }) {
   }
 
   async function deleteCard(cardId) {
+    setCards(prev => prev.filter(c => c.id !== cardId))
     await supabase.from('cards').delete().eq('id', cardId)
   }
 
@@ -108,6 +109,8 @@ export default function Board({ boardId, board }) {
   }
 
   async function deleteColumn(colId) {
+    setCards(prev => prev.filter(c => c.column_id !== colId))
+    setColumns(prev => prev.filter(c => c.id !== colId))
     await supabase.from('cards').delete().eq('column_id', colId)
     await supabase.from('columns').delete().eq('id', colId)
   }
