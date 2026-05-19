@@ -180,6 +180,9 @@ export default function Board({ boardId, board }) {
           <button className="header-btn" onClick={() => setShowAddCol(true)}>
             + Add column
           </button>
+          <button className="header-btn" onClick={() => window.print()}>
+            ↓ Export PDF
+          </button>
           <button className="header-btn primary" onClick={copyLink}>
             {copied ? '✓ Copied!' : '⟳ Share link'}
           </button>
