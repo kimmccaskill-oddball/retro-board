@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Card from './Card'
+import ConfirmModal from './ConfirmModal'
 
 export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteCard, onUpdateColumn, onDeleteColumn, votedCards }) {
   const [inputOpen, setInputOpen] = useState(false)
@@ -7,6 +8,7 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(column.title)
   const [saving, setSaving] = useState(false)
+  const [confirm, setConfirm] = useState(null) // { message, onConfirm }
 
   const sorted = [...cards].sort((a, b) => b.votes - a.votes)
 
@@ -15,11 +17,6 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
     await onAddCard(column.id, inputVal.trim())
     setInputVal('')
     setInputOpen(false)
-  }
-
-  async function handleDelete() {
-    if (!confirm(`Delete "${column.title}" and all its cards?`)) return
-    await onDeleteColumn(column.id)
   }
 
   async function saveTitle() {
@@ -50,7 +47,7 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
         <div className="col-actions">
           <span className="col-count">{cards.length}</span>
           <button className="icon-btn" onClick={() => setEditing(true)} title="Rename">✏️</button>
-          <button className="icon-btn danger" onClick={handleDelete} title="Delete column">🗑</button>
+          <button className="icon-btn danger" onClick={() => setConfirm({ message: 'Are you sure you want to delete this column?', onConfirm: () => onDeleteColumn(column.id) })} title="Delete column">🗑</button>
         </div>
       </div>
 
@@ -64,7 +61,7 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
             card={card}
             color={column.color}
             hasVoted={votedCards.has(card.id)}
-            onDelete={() => onDeleteCard(card.id)}
+            onDelete={() => setConfirm({ message: 'Are you sure you want to delete this card?', onConfirm: () => onDeleteCard(card.id) })}
             onVote={() => onVoteCard(card)}
           />
         ))}
@@ -91,6 +88,14 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
           </button>
         )}
       </div>
+
+      {confirm && (
+        <ConfirmModal
+          message={confirm.message}
+          onConfirm={() => { confirm.onConfirm(); setConfirm(null) }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </div>
   )
 }

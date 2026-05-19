@@ -82,13 +82,7 @@ describe('Column', () => {
     expect(screen.queryByPlaceholderText(/what's on your mind/i)).not.toBeInTheDocument()
   })
 
-  it('calls onDeleteCard when card delete is clicked', async () => {
-    const onDeleteCard = vi.fn()
-    renderColumn({ onDeleteCard })
-    const deleteButtons = screen.getAllByTitle('Delete')
-    await userEvent.click(deleteButtons[0])
-    expect(onDeleteCard).toHaveBeenCalledWith(expect.any(String))
-  })
+
 
   it('calls onVoteCard when vote button is clicked', async () => {
     const onVoteCard = vi.fn()
@@ -135,21 +129,47 @@ describe('Column', () => {
     expect(screen.getByText('Went well')).toBeInTheDocument()
   })
 
-  it('calls onDeleteColumn after confirm', async () => {
-    const onDeleteColumn = vi.fn()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-    renderColumn({ onDeleteColumn })
+  it('shows confirm modal when delete column is clicked', async () => {
+    renderColumn()
     await userEvent.click(screen.getByTitle('Delete column'))
-    expect(onDeleteColumn).toHaveBeenCalledWith('col-1')
-    vi.restoreAllMocks()
+    expect(screen.getByText('Are you sure you want to delete this column?')).toBeInTheDocument()
   })
 
-  it('does not call onDeleteColumn when confirm is cancelled', async () => {
+  it('calls onDeleteColumn when confirmed', async () => {
     const onDeleteColumn = vi.fn()
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
     renderColumn({ onDeleteColumn })
     await userEvent.click(screen.getByTitle('Delete column'))
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    expect(onDeleteColumn).toHaveBeenCalledWith('col-1')
+  })
+
+  it('does not call onDeleteColumn when cancelled', async () => {
+    const onDeleteColumn = vi.fn()
+    renderColumn({ onDeleteColumn })
+    await userEvent.click(screen.getByTitle('Delete column'))
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(onDeleteColumn).not.toHaveBeenCalled()
-    vi.restoreAllMocks()
+  })
+
+  it('shows confirm modal when delete card is clicked', async () => {
+    renderColumn()
+    await userEvent.click(screen.getAllByTitle('Delete')[0])
+    expect(screen.getByText('Are you sure you want to delete this card?')).toBeInTheDocument()
+  })
+
+  it('calls onDeleteCard when confirmed', async () => {
+    const onDeleteCard = vi.fn()
+    renderColumn({ onDeleteCard })
+    await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    expect(onDeleteCard).toHaveBeenCalled()
+  })
+
+  it('does not call onDeleteCard when cancelled', async () => {
+    const onDeleteCard = vi.fn()
+    renderColumn({ onDeleteCard })
+    await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(onDeleteCard).not.toHaveBeenCalled()
   })
 })

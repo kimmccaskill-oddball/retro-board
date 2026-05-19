@@ -406,6 +406,12 @@ body {
   border-color: var(--text);
 }
 .small-btn.primary:hover { opacity: 0.85; }
+.small-btn.danger {
+  background: #D85A30;
+  color: #fff;
+  border-color: #D85A30;
+}
+.small-btn.danger:hover { opacity: 0.85; background: #D85A30; }
 .small-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Modal */

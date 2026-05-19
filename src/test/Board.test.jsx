@@ -96,20 +96,20 @@ describe('Board', () => {
 
     supabase.from.mockReturnValue(makeDeleteChain())
     await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
     await waitFor(() => expect(screen.queryByText('Great sprint')).not.toBeInTheDocument())
   })
 
   it('removes a column and its cards from UI immediately when deleted (optimistic)', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<Board boardId="board-1" board={board} />)
     await waitFor(() => screen.getByText('Went well'))
 
     supabase.from.mockReturnValue(makeDeleteChain())
     await userEvent.click(screen.getAllByTitle('Delete column')[0])
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
 
     await waitFor(() => expect(screen.queryByText('Went well')).not.toBeInTheDocument())
     expect(screen.queryByText('Great sprint')).not.toBeInTheDocument()
-    vi.restoreAllMocks()
   })
 
   it('shows an alert when addCard fails', async () => {
@@ -141,6 +141,7 @@ describe('Board', () => {
     supabase.from.mockReturnValue(chain)
 
     await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Delete failed')))
     expect(screen.getByText('Great sprint')).toBeInTheDocument()
     vi.restoreAllMocks()
