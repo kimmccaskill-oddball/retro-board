@@ -399,7 +399,6 @@ body {
   background: color-mix(in srgb, currentColor 10%, transparent);
   border-color: color-mix(in srgb, currentColor 40%, transparent);
 }
-.reaction-wrap { position: relative; }
 .reaction-add-btn {
   font-size: 13px;
   width: 22px;
@@ -418,17 +417,14 @@ body {
 }
 .reaction-add-btn:hover { border-color: var(--text-2); color: var(--text-2); }
 .emoji-picker {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
   background: var(--surface);
   border: 1px solid var(--border-md);
   border-radius: var(--radius);
   padding: 6px;
   display: flex;
   gap: 2px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  z-index: 10;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 1000;
 }
 .emoji-option {
   font-size: 16px;

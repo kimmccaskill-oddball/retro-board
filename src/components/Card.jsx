@@ -1,20 +1,32 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 const EMOJIS = ['👍', '👎', '❤️', '😄', '🎉', '🤔', '😬']
 
 export default function Card({ card, color, hasVoted, myReactions, onDelete, onVote, onReact }) {
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerPos, setPickerPos] = useState({ top: 0, left: 0 })
+  const btnRef = useRef(null)
   const pickerRef = useRef(null)
   const reactions = card.reactions || {}
 
   useEffect(() => {
     if (!pickerOpen) return
     function handleClick(e) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target)) setPickerOpen(false)
+      if (
+        pickerRef.current && !pickerRef.current.contains(e.target) &&
+        btnRef.current && !btnRef.current.contains(e.target)
+      ) setPickerOpen(false)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [pickerOpen])
+
+  function openPicker() {
+    const rect = btnRef.current.getBoundingClientRect()
+    setPickerPos({ top: rect.top - 8, left: rect.right })
+    setPickerOpen(o => !o)
+  }
 
   return (
     <div className="card">
@@ -30,22 +42,25 @@ export default function Card({ card, color, hasVoted, myReactions, onDelete, onV
             {emoji} {count}
           </button>
         ))}
-        <div className="reaction-wrap" ref={pickerRef}>
-          <button className="reaction-add-btn" onClick={() => setPickerOpen(o => !o)} title="Add reaction">+</button>
-          {pickerOpen && (
-            <div className="emoji-picker">
-              {EMOJIS.map(emoji => (
-                <button
-                  key={emoji}
-                  className={`emoji-option${myReactions.includes(emoji) ? ' active' : ''}`}
-                  onClick={() => { onReact(card, emoji); setPickerOpen(false) }}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <button ref={btnRef} className="reaction-add-btn" onClick={openPicker} title="Add reaction">+</button>
+        {pickerOpen && createPortal(
+          <div
+            ref={pickerRef}
+            className="emoji-picker"
+            style={{ position: 'fixed', top: pickerPos.top, left: pickerPos.left, transform: 'translate(-100%, -100%)' }}
+          >
+            {EMOJIS.map(emoji => (
+              <button
+                key={emoji}
+                className={`emoji-option${myReactions.includes(emoji) ? ' active' : ''}`}
+                onClick={() => { onReact(card, emoji); setPickerOpen(false) }}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
       </div>
       <div className="card-footer">
         <button
