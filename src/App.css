@@ -341,6 +341,15 @@ body {
   white-space: pre-wrap;
   margin-bottom: 8px;
 }
+.card-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  min-height: 0;
+}
+.card-reactions:empty { display: none; }
 .card-footer {
   display: flex;
   align-items: center;
@@ -568,6 +577,7 @@ body {
 
   .board-header-right,
   .add-card-trigger,
+  .card-reactions,
   .card-footer,
   .col-actions,
   .modal-overlay { display: none !important; }

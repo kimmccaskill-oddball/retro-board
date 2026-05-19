@@ -19,7 +19,7 @@ export default function Card({ card, color, hasVoted, myReactions, onDelete, onV
   return (
     <div className="card">
       <p className="card-text">{card.text}</p>
-      <div className="card-footer">
+      <div className="card-reactions">
         {Object.entries(reactions).filter(([, count]) => count > 0).map(([emoji, count]) => (
           <button
             key={emoji}
@@ -46,6 +46,8 @@ export default function Card({ card, color, hasVoted, myReactions, onDelete, onV
             </div>
           )}
         </div>
+      </div>
+      <div className="card-footer">
         <button
           className={`vote-btn${card.votes > 0 ? ' has-votes' : ''}${hasVoted ? ' my-vote' : ''}`}
           style={card.votes > 0 ? { '--vote-color': color } : {}}
