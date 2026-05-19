@@ -15,9 +15,11 @@ function renderColumn(overrides = {}) {
     onAddCard: vi.fn(),
     onDeleteCard: vi.fn(),
     onVoteCard: vi.fn(),
+    onReactToCard: vi.fn(),
     onUpdateColumn: vi.fn(),
     onDeleteColumn: vi.fn(),
     votedCards: new Set(),
+    myReactions: {},
     ...overrides,
   }
   return { ...render(<Column {...props} />), props }

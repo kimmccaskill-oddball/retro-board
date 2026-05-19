@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Card from './Card'
 import ConfirmModal from './ConfirmModal'
 
-export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteCard, onUpdateColumn, onDeleteColumn, votedCards }) {
+export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteCard, onReactToCard, onUpdateColumn, onDeleteColumn, votedCards, myReactions }) {
   const [inputOpen, setInputOpen] = useState(false)
   const [inputVal, setInputVal] = useState('')
   const [editing, setEditing] = useState(false)
@@ -61,8 +61,10 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
             card={card}
             color={column.color}
             hasVoted={votedCards.has(card.id)}
+            myReactions={myReactions[card.id] || []}
             onDelete={() => setConfirm({ message: 'Are you sure you want to delete this card?', onConfirm: () => onDeleteCard(card.id) })}
             onVote={() => onVoteCard(card)}
+            onReact={(card, emoji) => onReactToCard(card, emoji)}
           />
         ))}
 

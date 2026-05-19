@@ -34,6 +34,10 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
   const [showAddCol, setShowAddCol] = useState(false)
   const [copied, setCopied] = useState(false)
   const [votedCards, setVotedCards] = useState(getVotedCards)
+  const [myReactions, setMyReactions] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('retro-reactions') || '{}') }
+    catch { return {} }
+  })
 
   useEffect(() => {
     initBoard()
@@ -130,6 +134,30 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
     }
   }
 
+  async function reactToCard(card, emoji) {
+    const cardReactions = myReactions[card.id] || []
+    const hasReacted = cardReactions.includes(emoji)
+    const reactions = { ...(card.reactions || {}) }
+    if (hasReacted) {
+      reactions[emoji] = Math.max(0, (reactions[emoji] || 1) - 1)
+      if (reactions[emoji] === 0) delete reactions[emoji]
+    } else {
+      reactions[emoji] = (reactions[emoji] || 0) + 1
+    }
+    const newMyReactions = {
+      ...myReactions,
+      [card.id]: hasReacted ? cardReactions.filter(e => e !== emoji) : [...cardReactions, emoji],
+    }
+    setMyReactions(newMyReactions)
+    localStorage.setItem('retro-reactions', JSON.stringify(newMyReactions))
+    const { error } = await supabase.from('cards').update({ reactions }).eq('id', card.id)
+    if (error) {
+      setMyReactions(myReactions)
+      localStorage.setItem('retro-reactions', JSON.stringify(myReactions))
+      alert(`Error adding reaction: ${error.message}`)
+    }
+  }
+
   async function addColumn(title, color) {
     const maxPos = columns.reduce((m, c) => Math.max(m, c.position), -1)
     const { error } = await supabase.from('columns').insert({
@@ -202,9 +230,11 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
               onAddCard={addCard}
               onDeleteCard={deleteCard}
               onVoteCard={voteCard}
+              onReactToCard={reactToCard}
               onUpdateColumn={updateColumn}
               onDeleteColumn={deleteColumn}
               votedCards={votedCards}
+              myReactions={myReactions}
             />
           ))}
         </div>

@@ -21,6 +21,7 @@ create table cards (
   column_id uuid references columns(id) on delete cascade not null,
   text text not null,
   votes integer not null default 0,
+  reactions jsonb not null default '{}',
   created_at timestamptz default now()
 );
 
