@@ -28,6 +28,10 @@ create table cards (
 alter publication supabase_realtime add table cards;
 alter publication supabase_realtime add table columns;
 
+-- Required for realtime DELETE events to include board_id so subscription filters match
+alter table cards replica identity full;
+alter table columns replica identity full;
+
 -- Allow public access (no auth required for participants)
 alter table boards enable row level security;
 alter table columns enable row level security;
