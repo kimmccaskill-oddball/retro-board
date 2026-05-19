@@ -1,0 +1,15 @@
+name: Keep Supabase alive
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # every day at 8am UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.VITE_SUPABASE_URL }}/rest/v1/boards?limit=1" \
+            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}"
