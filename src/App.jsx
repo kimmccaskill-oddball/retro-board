@@ -43,7 +43,7 @@ export default function App() {
       .select()
       .single()
 
-    if (error) { alert('Error creating board'); return }
+    if (error) { alert(`Error creating board: ${error.message}`); return }
     window.location.hash = data.id
     setBoardId(data.id)
     setBoard(data)
