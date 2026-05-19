@@ -1,0 +1,154 @@
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import Column from '../components/Column'
+
+const column = { id: 'col-1', title: 'Went well', color: '#1D9E75', position: 0 }
+const cards = [
+  { id: 'c1', text: 'Great teamwork', votes: 2, column_id: 'col-1' },
+  { id: 'c2', text: 'Good demos', votes: 0, column_id: 'col-1' },
+]
+
+function renderColumn(overrides = {}) {
+  const props = {
+    column,
+    cards,
+    onAddCard: vi.fn(),
+    onDeleteCard: vi.fn(),
+    onVoteCard: vi.fn(),
+    onUpdateColumn: vi.fn(),
+    onDeleteColumn: vi.fn(),
+    ...overrides,
+  }
+  return { ...render(<Column {...props} />), props }
+}
+
+describe('Column', () => {
+  it('renders the column title and card count', () => {
+    renderColumn()
+    expect(screen.getByText('Went well')).toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument()
+  })
+
+  it('renders all cards', () => {
+    renderColumn()
+    expect(screen.getByText('Great teamwork')).toBeInTheDocument()
+    expect(screen.getByText('Good demos')).toBeInTheDocument()
+  })
+
+  it('renders cards sorted by votes descending', () => {
+    renderColumn()
+    const cardTexts = screen.getAllByClass !== undefined
+      ? screen.getAllByText(/teamwork|demos/)
+      : [screen.getByText('Great teamwork'), screen.getByText('Good demos')]
+    // 'Great teamwork' (2 votes) should appear before 'Good demos' (0 votes)
+    const all = screen.getAllByText(/Great teamwork|Good demos/)
+    expect(all[0]).toHaveTextContent('Great teamwork')
+  })
+
+  it('shows empty hint when no cards', () => {
+    renderColumn({ cards: [] })
+    expect(screen.getByText(/no cards yet/i)).toBeInTheDocument()
+  })
+
+  it('opens card input when Add a card is clicked', async () => {
+    renderColumn()
+    await userEvent.click(screen.getByText('+ Add a card'))
+    expect(screen.getByPlaceholderText(/what's on your mind/i)).toBeInTheDocument()
+  })
+
+  it('calls onAddCard with trimmed text and closes input', async () => {
+    const onAddCard = vi.fn().mockResolvedValue(undefined)
+    renderColumn({ onAddCard })
+    await userEvent.click(screen.getByText('+ Add a card'))
+    await userEvent.type(screen.getByPlaceholderText(/what's on your mind/i), 'New card')
+    await userEvent.click(screen.getByRole('button', { name: /add card/i }))
+    expect(onAddCard).toHaveBeenCalledWith('col-1', 'New card')
+    expect(screen.queryByPlaceholderText(/what's on your mind/i)).not.toBeInTheDocument()
+  })
+
+  it('submits card on Enter (without shift)', async () => {
+    const onAddCard = vi.fn().mockResolvedValue(undefined)
+    renderColumn({ onAddCard })
+    await userEvent.click(screen.getByText('+ Add a card'))
+    await userEvent.type(screen.getByPlaceholderText(/what's on your mind/i), 'New card{Enter}')
+    expect(onAddCard).toHaveBeenCalledWith('col-1', 'New card')
+  })
+
+  it('cancels card input on Escape', async () => {
+    renderColumn()
+    await userEvent.click(screen.getByText('+ Add a card'))
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByPlaceholderText(/what's on your mind/i)).not.toBeInTheDocument()
+  })
+
+  it('calls onDeleteCard when card delete is clicked', async () => {
+    const onDeleteCard = vi.fn()
+    renderColumn({ onDeleteCard })
+    const deleteButtons = screen.getAllByTitle('Delete')
+    await userEvent.click(deleteButtons[0])
+    expect(onDeleteCard).toHaveBeenCalledWith(expect.any(String))
+  })
+
+  it('calls onVoteCard when vote button is clicked', async () => {
+    const onVoteCard = vi.fn()
+    renderColumn({ onVoteCard })
+    const voteButtons = screen.getAllByTitle('Upvote')
+    await userEvent.click(voteButtons[0])
+    expect(onVoteCard).toHaveBeenCalled()
+  })
+
+  it('enters edit mode when title is clicked', async () => {
+    renderColumn()
+    await userEvent.click(screen.getByText('Went well'))
+    expect(screen.getByDisplayValue('Went well')).toBeInTheDocument()
+  })
+
+  it('calls onUpdateColumn with new title on blur', async () => {
+    const onUpdateColumn = vi.fn().mockResolvedValue(undefined)
+    renderColumn({ onUpdateColumn })
+    await userEvent.click(screen.getByText('Went well'))
+    const input = screen.getByDisplayValue('Went well')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Updated title')
+    await userEvent.tab()
+    expect(onUpdateColumn).toHaveBeenCalledWith('col-1', { title: 'Updated title' })
+  })
+
+  it('reverts title on Escape during edit', async () => {
+    renderColumn()
+    await userEvent.click(screen.getByText('Went well'))
+    const input = screen.getByDisplayValue('Went well')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Something else{Escape}')
+    expect(screen.getByText('Went well')).toBeInTheDocument()
+  })
+
+  it('reverts to original title if edit is cleared and blurred', async () => {
+    const onUpdateColumn = vi.fn()
+    renderColumn({ onUpdateColumn })
+    await userEvent.click(screen.getByText('Went well'))
+    const input = screen.getByDisplayValue('Went well')
+    await userEvent.clear(input)
+    await userEvent.tab()
+    expect(onUpdateColumn).not.toHaveBeenCalled()
+    expect(screen.getByText('Went well')).toBeInTheDocument()
+  })
+
+  it('calls onDeleteColumn after confirm', async () => {
+    const onDeleteColumn = vi.fn()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    renderColumn({ onDeleteColumn })
+    await userEvent.click(screen.getByTitle('Delete column'))
+    expect(onDeleteColumn).toHaveBeenCalledWith('col-1')
+    vi.restoreAllMocks()
+  })
+
+  it('does not call onDeleteColumn when confirm is cancelled', async () => {
+    const onDeleteColumn = vi.fn()
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    renderColumn({ onDeleteColumn })
+    await userEvent.click(screen.getByTitle('Delete column'))
+    expect(onDeleteColumn).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
+  })
+})

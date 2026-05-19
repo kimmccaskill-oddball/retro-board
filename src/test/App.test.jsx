@@ -1,0 +1,105 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest'
+import App from '../App'
+
+vi.mock('../lib/supabase', () => {
+  const makeChannel = () => {
+    const ch = { on: vi.fn(), subscribe: vi.fn() }
+    ch.on.mockReturnValue(ch)
+    ch.subscribe.mockReturnValue(ch)
+    return ch
+  }
+  const supabase = {
+    from: vi.fn(),
+    channel: vi.fn(() => makeChannel()),
+    removeChannel: vi.fn(),
+  }
+  return { supabase }
+})
+
+import { supabase } from '../lib/supabase'
+
+const mockBoard = { id: 'board-abc', name: 'Sprint 42' }
+
+function stubBoards(board, error = null) {
+  const chain = { select: vi.fn(), insert: vi.fn(), eq: vi.fn(), single: vi.fn() }
+  chain.select.mockReturnValue(chain)
+  chain.insert.mockReturnValue(chain)
+  chain.eq.mockReturnValue(chain)
+  chain.single.mockResolvedValue({ data: board, error })
+  return chain
+}
+
+function stubEmptyTable() {
+  const chain = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), insert: vi.fn() }
+  chain.select.mockReturnValue(chain)
+  chain.eq.mockReturnValue(chain)
+  chain.order.mockResolvedValue({ data: [] })
+  chain.insert.mockReturnValue(chain)
+  return chain
+}
+
+describe('App', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    window.location.hash = ''
+  })
+
+  afterEach(() => {
+    window.location.hash = ''
+  })
+
+  it('shows HomeScreen when there is no board hash', async () => {
+    render(<App />)
+    await waitFor(() => expect(screen.getByPlaceholderText(/name your board/i)).toBeInTheDocument())
+  })
+
+  it('creates a board and navigates to it', async () => {
+    supabase.from.mockImplementation(table => {
+      if (table === 'boards') return stubBoards(mockBoard)
+      return stubEmptyTable()
+    })
+
+    render(<App />)
+    await waitFor(() => screen.getByPlaceholderText(/name your board/i))
+    await userEvent.type(screen.getByPlaceholderText(/name your board/i), 'Sprint 42')
+    await userEvent.click(screen.getByRole('button', { name: /create board/i }))
+
+    await waitFor(() => expect(screen.getByText('Sprint 42')).toBeInTheDocument())
+    expect(window.location.hash).toBe('#board-abc')
+  })
+
+  it('shows an error alert if board creation fails', async () => {
+    supabase.from.mockImplementation(() => stubBoards(null, { message: 'DB error' }))
+
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+    render(<App />)
+    await waitFor(() => screen.getByPlaceholderText(/name your board/i))
+    await userEvent.type(screen.getByPlaceholderText(/name your board/i), 'Sprint 42')
+    await userEvent.click(screen.getByRole('button', { name: /create board/i }))
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('DB error')))
+    vi.restoreAllMocks()
+  })
+
+  it('loads a board from the URL hash on mount', async () => {
+    window.location.hash = '#board-abc'
+    supabase.from.mockImplementation(table => {
+      if (table === 'boards') return stubBoards(mockBoard)
+      return stubEmptyTable()
+    })
+
+    render(<App />)
+    await waitFor(() => expect(screen.getByText('Sprint 42')).toBeInTheDocument())
+  })
+
+  it('clears the hash and shows HomeScreen if the board is not found', async () => {
+    window.location.hash = '#board-missing'
+    supabase.from.mockImplementation(() => stubBoards(null, { message: 'Not found' }))
+
+    render(<App />)
+    await waitFor(() => expect(screen.getByPlaceholderText(/name your board/i)).toBeInTheDocument())
+    expect(window.location.hash).toBe('')
+  })
+})
