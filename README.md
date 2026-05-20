@@ -37,7 +37,11 @@ A fast, shareable retrospective board. No sign-up required for participants.
 
 ### 2. Set environment variables
 
-Create a `.env` file in the project root:
+Copy the example file and fill in your values:
+
+```bash
+cp .env.example .env
+```
 
 ```
 VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
@@ -58,8 +62,8 @@ Open [http://localhost:5173](http://localhost:5173)
 ## Deploy to GitHub Pages
 
 1. Push to a GitHub repo
-2. Go to **Settings → Pages → Build and deployment** and set Source to **GitHub Actions**
-3. Add your Supabase credentials as repository secrets:
+2. Go to **Settings → Pages → Build and deployment** and set Source to **GitHub Actions** (not "Deploy from a branch" — that will serve raw source files instead of the built app)
+3. Add your Supabase credentials as repository secrets (**Settings → Secrets and variables → Actions**):
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
 4. Push to `main` — the deploy workflow runs automatically
