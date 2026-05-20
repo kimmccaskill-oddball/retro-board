@@ -285,6 +285,8 @@ body {
   gap: 14px;
   height: 100%;
   align-items: flex-start;
+  min-width: max-content;
+  margin-inline: auto;
 }
 .column {
   flex: 0 0 240px;
