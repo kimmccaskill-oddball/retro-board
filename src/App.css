@@ -279,13 +279,13 @@ body {
   overflow-x: auto;
   overflow-y: hidden;
   padding: 1.25rem;
+  display: flex;
 }
 .columns-track {
   display: flex;
   gap: 14px;
   height: 100%;
   align-items: flex-start;
-  min-width: max-content;
   margin-inline: auto;
 }
 .column {
