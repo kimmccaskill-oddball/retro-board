@@ -78,7 +78,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
       .channel(`board-${boardId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cards', filter: `board_id=eq.${boardId}` }, payload => {
         if (payload.eventType === 'INSERT') {
-          setCards(prev => [...prev, payload.new])
+          setCards(prev => prev.some(c => c.id === payload.new.id) ? prev : [...prev, payload.new])
         } else if (payload.eventType === 'DELETE') {
           setCards(prev => prev.filter(c => c.id !== payload.old.id))
         } else if (payload.eventType === 'UPDATE') {
@@ -87,7 +87,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'columns', filter: `board_id=eq.${boardId}` }, payload => {
         if (payload.eventType === 'INSERT') {
-          setColumns(prev => [...prev, payload.new].sort((a, b) => a.position - b.position))
+          setColumns(prev => prev.some(c => c.id === payload.new.id) ? prev : [...prev, payload.new].sort((a, b) => a.position - b.position))
         } else if (payload.eventType === 'DELETE') {
           setColumns(prev => prev.filter(c => c.id !== payload.old.id))
         } else if (payload.eventType === 'UPDATE') {
