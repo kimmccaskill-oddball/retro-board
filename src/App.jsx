@@ -67,6 +67,7 @@ export default function App() {
     }
     saveRecentBoard(data)
     setRecentBoards(getRecentBoards())
+    window.location.hash = data.slug || data.id
     setBoardId(data.id)
     setBoard(data)
     setLoading(false)
