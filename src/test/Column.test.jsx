@@ -38,14 +38,11 @@ describe('Column', () => {
     expect(screen.getByText('Good demos')).toBeInTheDocument()
   })
 
-  it('renders cards sorted by votes descending', () => {
+  it('renders cards in insertion order', () => {
     renderColumn()
-    const cardTexts = screen.getAllByClass !== undefined
-      ? screen.getAllByText(/teamwork|demos/)
-      : [screen.getByText('Great teamwork'), screen.getByText('Good demos')]
-    // 'Great teamwork' (2 votes) should appear before 'Good demos' (0 votes)
     const all = screen.getAllByText(/Great teamwork|Good demos/)
     expect(all[0]).toHaveTextContent('Great teamwork')
+    expect(all[1]).toHaveTextContent('Good demos')
   })
 
   it('shows empty hint when no cards', () => {

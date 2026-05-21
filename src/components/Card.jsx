@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 
 const EMOJIS = ['👍', '👎', '❤️', '😄', '🎉', '🤔', '😬']
 
-export default function Card({ card, color, hasVoted, myReactions, onDelete, onVote, onReact }) {
+export default function Card({ card, color, hasVoted, votePending, myReactions, onDelete, onVote, onReact }) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerPos, setPickerPos] = useState({ top: 0, left: 0 })
   const btnRef = useRef(null)
@@ -67,6 +67,7 @@ export default function Card({ card, color, hasVoted, myReactions, onDelete, onV
           className={`vote-btn${card.votes > 0 ? ' has-votes' : ''}${hasVoted ? ' my-vote' : ''}`}
           style={card.votes > 0 ? { '--vote-color': color } : {}}
           onClick={onVote}
+          disabled={votePending}
           title={hasVoted ? 'Remove vote' : 'Upvote'}
         >
           ▲ {card.votes}

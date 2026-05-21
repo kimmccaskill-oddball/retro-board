@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Card from './Card'
 import ConfirmModal from './ConfirmModal'
 
-export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteCard, onReactToCard, onUpdateColumn, onDeleteColumn, votedCards, myReactions }) {
+export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteCard, onReactToCard, onUpdateColumn, onDeleteColumn, votedCards, pendingVotes = new Set(), myReactions }) {
   const [inputOpen, setInputOpen] = useState(false)
   const [inputVal, setInputVal] = useState('')
   const [editing, setEditing] = useState(false)
@@ -10,7 +10,6 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
   const [saving, setSaving] = useState(false)
   const [confirm, setConfirm] = useState(null) // { message, onConfirm }
 
-  const sorted = [...cards].sort((a, b) => b.votes - a.votes)
 
   async function handleAdd() {
     if (!inputVal.trim()) return
@@ -52,15 +51,16 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
       </div>
 
       <div className="col-body">
-        {sorted.length === 0 && !inputOpen && (
+        {cards.length === 0 && !inputOpen && (
           <p className="empty-hint">No cards yet</p>
         )}
-        {sorted.map(card => (
+        {cards.map(card => (
           <Card
             key={card.id}
             card={card}
             color={column.color}
             hasVoted={votedCards.has(card.id)}
+            votePending={pendingVotes.has(card.id)}
             myReactions={myReactions[card.id] || []}
             onDelete={() => setConfirm({ message: 'Are you sure you want to delete this card?', onConfirm: () => onDeleteCard(card.id) })}
             onVote={() => onVoteCard(card)}

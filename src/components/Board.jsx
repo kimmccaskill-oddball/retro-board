@@ -34,6 +34,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
   const [showAddCol, setShowAddCol] = useState(false)
   const [copied, setCopied] = useState(false)
   const [votedCards, setVotedCards] = useState(getVotedCards)
+  const [pendingVotes, setPendingVotes] = useState(new Set())
   const [myReactions, setMyReactions] = useState(() => {
     try { return JSON.parse(localStorage.getItem('retro-reactions') || '{}') }
     catch { return {} }
@@ -124,14 +125,17 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
   }
 
   async function voteCard(card) {
+    if (pendingVotes.has(card.id)) return
+    setPendingVotes(prev => new Set([...prev, card.id]))
     const hasVoted = votedCards.has(card.id)
-    const newVotes = hasVoted ? card.votes - 1 : card.votes + 1
+    const newVotes = Math.max(0, hasVoted ? card.votes - 1 : card.votes + 1)
     const newVotedCards = new Set(votedCards)
     if (hasVoted) newVotedCards.delete(card.id)
     else newVotedCards.add(card.id)
     setVotedCards(newVotedCards)
     saveVotedCards(newVotedCards)
     const { error } = await supabase.from('cards').update({ votes: newVotes }).eq('id', card.id)
+    setPendingVotes(prev => { const s = new Set(prev); s.delete(card.id); return s })
     if (error) {
       setVotedCards(votedCards)
       saveVotedCards(votedCards)
@@ -243,6 +247,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
               onUpdateColumn={updateColumn}
               onDeleteColumn={deleteColumn}
               votedCards={votedCards}
+              pendingVotes={pendingVotes}
               myReactions={myReactions}
             />
           ))}
