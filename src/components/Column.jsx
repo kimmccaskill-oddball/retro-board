@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Card from './Card'
 import ConfirmModal from './ConfirmModal'
+import { PencilIcon, TrashIcon, PlusIcon } from './Icons'
 
 export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteCard, onReactToCard, onUpdateColumn, onDeleteColumn, votedCards, pendingVotes = new Set(), myReactions }) {
   const [inputOpen, setInputOpen] = useState(false)
@@ -27,8 +28,8 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
   }
 
   return (
-    <div className="column">
-      <div className="col-header" style={{ '--col-color': column.color }}>
+    <div className="column" style={{ '--col-color': column.color }}>
+      <div className="col-header">
         <div className="col-dot" style={{ background: column.color }} />
         {editing ? (
           <input
@@ -45,14 +46,14 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
         )}
         <div className="col-actions">
           <span className="col-count">{cards.length}</span>
-          <button className="icon-btn" onClick={() => setEditing(true)} title="Rename">✏️</button>
-          <button className="icon-btn danger" onClick={() => setConfirm({ message: 'Are you sure you want to delete this column?', onConfirm: () => onDeleteColumn(column.id) })} title="Delete column">🗑</button>
+          <button className="icon-btn" onClick={() => setEditing(true)} title="Rename column"><PencilIcon /></button>
+          <button className="icon-btn danger" onClick={() => setConfirm({ message: 'Are you sure you want to delete this column?', onConfirm: () => onDeleteColumn(column.id) })} title="Delete column"><TrashIcon /></button>
         </div>
       </div>
 
       <div className="col-body">
         {cards.length === 0 && !inputOpen && (
-          <p className="empty-hint">No cards yet</p>
+          <p className="empty-hint">No cards yet — add the first one</p>
         )}
         {cards.map(card => (
           <Card
@@ -92,7 +93,7 @@ export default function Column({ column, cards, onAddCard, onDeleteCard, onVoteC
             disabled={cards.length >= 30}
             title={cards.length >= 30 ? 'Column is full (30 cards max)' : undefined}
           >
-            {cards.length >= 30 ? 'Column full' : '+ Add a card'}
+            {cards.length >= 30 ? 'Column full' : <><PlusIcon size={13} /> Add a card</>}
           </button>
         )}
       </div>

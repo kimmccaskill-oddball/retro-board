@@ -93,29 +93,25 @@ describe('App', () => {
   })
 
   it('blocks board creation when rate limit is exceeded', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     const now = Date.now()
     localStorage.setItem('retro-create-times', JSON.stringify([now, now, now, now, now]))
     render(<App />)
     await waitFor(() => screen.getByPlaceholderText(/name your board/i))
     await userEvent.type(screen.getByPlaceholderText(/name your board/i), 'Sprint 42')
     await userEvent.click(screen.getByRole('button', { name: /create board/i }))
-    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('too many boards'))
+    expect(await screen.findByText(/too many boards/i)).toBeInTheDocument()
     localStorage.removeItem('retro-create-times')
-    vi.restoreAllMocks()
   })
 
-  it('shows an error alert if board creation fails', async () => {
+  it('shows an error toast if board creation fails', async () => {
     supabase.from.mockImplementation(() => stubBoards(null, { message: 'DB error' }))
 
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
     render(<App />)
     await waitFor(() => screen.getByPlaceholderText(/name your board/i))
     await userEvent.type(screen.getByPlaceholderText(/name your board/i), 'Sprint 42')
     await userEvent.click(screen.getByRole('button', { name: /create board/i }))
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('DB error')))
-    vi.restoreAllMocks()
+    expect(await screen.findByText(/DB error/)).toBeInTheDocument()
   })
 
   it('clears the hash and shows HomeScreen if the board is not found', async () => {

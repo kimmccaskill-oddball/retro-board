@@ -1,15 +1,6 @@
 import { useState } from 'react'
-
-function timeAgo(ts) {
-  const diff = Date.now() - ts
-  const mins = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  if (hours < 24) return `${hours}h ago`
-  return `${days}d ago`
-}
+import { timeAgo } from '../lib/timeAgo'
+import { SunIcon, MoonIcon, BoltIcon, HeartIcon, FileIcon } from './Icons'
 
 export default function HomeScreen({ onCreate, recentBoards = [], onOpenBoard, theme, onToggleTheme }) {
   const [name, setName] = useState('')
@@ -25,15 +16,16 @@ export default function HomeScreen({ onCreate, recentBoards = [], onOpenBoard, t
 
   return (
     <div className="home-screen">
+      <div className="home-bg" aria-hidden="true" />
       <button className="theme-toggle" onClick={onToggleTheme} title="Toggle theme">
-        {theme === 'dark' ? '☀︎' : '☽'}
+        {theme === 'dark' ? <SunIcon size={17} /> : <MoonIcon size={17} />}
       </button>
       <div className="home-card">
         <div className="home-logo">
           <div className="logo-mark">R</div>
         </div>
         <h1 className="home-title">Retro Board</h1>
-        <p className="home-subtitle">Run better retrospectives. No sign-up required for your team.</p>
+        <p className="home-subtitle">Run better retrospectives with your team — real-time, no sign-up required.</p>
         <form onSubmit={handleCreate} className="home-form">
           <input
             className="home-input"
@@ -48,6 +40,11 @@ export default function HomeScreen({ onCreate, recentBoards = [], onOpenBoard, t
             {loading ? 'Creating…' : 'Create board →'}
           </button>
         </form>
+        <div className="home-features">
+          <span className="feature-pill"><BoltIcon /> Real-time sync</span>
+          <span className="feature-pill"><HeartIcon /> Votes &amp; reactions</span>
+          <span className="feature-pill"><FileIcon /> PDF export</span>
+        </div>
         <p className="home-hint">A shareable link will be generated. Anyone with the link can collaborate.</p>
 
         {recentBoards.length > 0 && (

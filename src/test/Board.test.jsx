@@ -1,7 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, beforeEach, describe, it, expect } from 'vitest'
 import Board from '../components/Board'
+
+vi.mock('../lib/toast', () => ({ toast: vi.fn() }))
 
 const mockColumns = [
   { id: 'col-1', board_id: 'board-1', title: 'Went well', color: '#1D9E75', position: 0 },
@@ -28,6 +30,7 @@ vi.mock('../lib/supabase', () => {
 })
 
 import { supabase } from '../lib/supabase'
+import { toast } from '../lib/toast'
 
 const board = { id: 'board-1', name: 'Sprint 42' }
 
@@ -95,7 +98,7 @@ describe('Board', () => {
     await waitFor(() => screen.getByText('Great sprint'))
 
     supabase.from.mockReturnValue(makeDeleteChain())
-    await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await userEvent.click(screen.getAllByTitle('Delete card')[0])
     await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
     await waitFor(() => expect(screen.queryByText('Great sprint')).not.toBeInTheDocument())
   })
@@ -112,8 +115,7 @@ describe('Board', () => {
     expect(screen.queryByText('Great sprint')).not.toBeInTheDocument()
   })
 
-  it('shows an alert when addCard fails', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+  it('shows an error toast when addCard fails', async () => {
     render(<Board boardId="board-1" board={board} />)
     await waitFor(() => screen.getByText('Went well'))
 
@@ -123,15 +125,13 @@ describe('Board', () => {
       return chain
     })
 
-    await userEvent.click(screen.getAllByText('+ Add a card')[0])
+    await userEvent.click(screen.getAllByRole('button', { name: /add a card/i })[0])
     await userEvent.type(screen.getByPlaceholderText(/what's on your mind/i), 'New card')
     await userEvent.click(screen.getByRole('button', { name: /add card/i }))
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Insert failed')))
-    vi.restoreAllMocks()
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringContaining('Insert failed'), 'error'))
   })
 
-  it('rolls back card delete and shows alert on failure', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+  it('rolls back card delete and shows error toast on failure', async () => {
     render(<Board boardId="board-1" board={board} />)
     await waitFor(() => screen.getByText('Great sprint'))
 
@@ -140,15 +140,13 @@ describe('Board', () => {
     chain.eq.mockResolvedValue({ error: { message: 'Delete failed' } })
     supabase.from.mockReturnValue(chain)
 
-    await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await userEvent.click(screen.getAllByTitle('Delete card')[0])
     await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Delete failed')))
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringContaining('Delete failed'), 'error'))
     expect(screen.getByText('Great sprint')).toBeInTheDocument()
-    vi.restoreAllMocks()
   })
 
-  it('shows an alert when addColumn fails', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+  it('shows an error toast when addColumn fails', async () => {
     render(<Board boardId="board-1" board={board} />)
     await waitFor(() => screen.getByText('Went well'))
 
@@ -158,15 +156,14 @@ describe('Board', () => {
       return chain
     })
 
-    await userEvent.click(screen.getByRole('button', { name: /\+ add column/i }))
+    await userEvent.click(screen.getByRole('button', { name: /add column/i }))
+    const modal = screen.getByPlaceholderText('Column name').closest('.modal')
     await userEvent.type(screen.getByPlaceholderText('Column name'), 'New col')
-    await userEvent.click(screen.getByRole('button', { name: /^add column$/i }))
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Column insert failed')))
-    vi.restoreAllMocks()
+    await userEvent.click(within(modal).getByRole('button', { name: /^add column$/i }))
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringContaining('Column insert failed'), 'error'))
   })
 
-  it('alerts and does not insert when column limit is reached', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
+  it('shows error toast and does not insert when column limit is reached', async () => {
     const tenColumns = Array.from({ length: 10 }, (_, i) => ({
       id: `col-${i}`, board_id: 'board-1', title: `Col ${i}`, color: '#1D9E75', position: i,
     }))
@@ -191,11 +188,11 @@ describe('Board', () => {
     })
     render(<Board boardId="board-1" board={board} />)
     await waitFor(() => screen.getByText('Col 0'))
-    await userEvent.click(screen.getByRole('button', { name: /\+ add column/i }))
+    await userEvent.click(screen.getByRole('button', { name: /add column/i }))
+    const modal = screen.getByPlaceholderText('Column name').closest('.modal')
     await userEvent.type(screen.getByPlaceholderText('Column name'), 'Overflow col')
-    await userEvent.click(screen.getByRole('button', { name: /^add column$/i }))
-    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('10 columns'))
-    vi.restoreAllMocks()
+    await userEvent.click(within(modal).getByRole('button', { name: /^add column$/i }))
+    expect(toast).toHaveBeenCalledWith(expect.stringContaining('10 columns'), 'error')
   })
 
   it('disables add card and shows Column full when card limit is reached', async () => {

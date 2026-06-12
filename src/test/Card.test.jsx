@@ -22,13 +22,13 @@ describe('Card', () => {
   it('renders card text and vote count', () => {
     renderCard()
     expect(screen.getByText('Test card')).toBeInTheDocument()
-    expect(screen.getByText('▲ 0')).toBeInTheDocument()
+    expect(screen.getByTitle('Upvote')).toHaveTextContent('0')
   })
 
   it('calls onDelete when delete button clicked', async () => {
     const onDelete = vi.fn()
     renderCard({ onDelete })
-    await userEvent.click(screen.getByTitle('Delete'))
+    await userEvent.click(screen.getByTitle('Delete card'))
     expect(onDelete).toHaveBeenCalledOnce()
   })
 

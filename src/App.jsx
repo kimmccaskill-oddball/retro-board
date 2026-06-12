@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import Board from './components/Board'
 import HomeScreen from './components/HomeScreen'
+import Toaster from './components/Toaster'
 import { supabase } from './lib/supabase'
 import { useTheme } from './lib/useTheme'
+import { toast } from './lib/toast'
 import './App.css'
 
 const SLUG_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -75,7 +77,7 @@ export default function App() {
 
   async function createBoard(name) {
     if (!checkRateLimit()) {
-      alert('You\'ve created too many boards. Please wait an hour before creating another.')
+      toast('You\'ve created too many boards. Please wait an hour before creating another.', 'error')
       return
     }
     let data, error, attempts = 0
@@ -89,7 +91,7 @@ export default function App() {
       attempts++
     } while (error?.code === '23505' && attempts < 5)
 
-    if (error) { alert(`Error creating board: ${error.message}`); return }
+    if (error) { toast(`Error creating board: ${error.message}`, 'error'); return }
     saveRecentBoard(data)
     setRecentBoards(getRecentBoards())
     window.location.hash = data.slug
@@ -97,21 +99,31 @@ export default function App() {
     setBoard(data)
   }
 
-  if (loading) return (
-    <div className="loading-screen">
-      <div className="loading-spinner" />
-    </div>
-  )
+  let screen
+  if (loading) {
+    screen = (
+      <div className="loading-screen">
+        <div className="loading-spinner" />
+      </div>
+    )
+  } else if (!boardId) {
+    screen = (
+      <HomeScreen
+        onCreate={createBoard}
+        recentBoards={recentBoards}
+        onOpenBoard={hash => loadBoard(hash)}
+        theme={theme}
+        onToggleTheme={toggle}
+      />
+    )
+  } else {
+    screen = <Board boardId={boardId} board={board} theme={theme} onToggleTheme={toggle} />
+  }
 
-  if (!boardId) return (
-    <HomeScreen
-      onCreate={createBoard}
-      recentBoards={recentBoards}
-      onOpenBoard={hash => loadBoard(hash)}
-      theme={theme}
-      onToggleTheme={toggle}
-    />
+  return (
+    <>
+      {screen}
+      <Toaster />
+    </>
   )
-
-  return <Board boardId={boardId} board={board} theme={theme} onToggleTheme={toggle} />
 }

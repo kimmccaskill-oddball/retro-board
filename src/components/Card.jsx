@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { timeAgo } from '../lib/timeAgo'
+import { ArrowUpIcon, XIcon } from './Icons'
 
 const EMOJIS = ['👍', '👎', '❤️', '😄', '🎉', '🤔', '😬']
 
@@ -63,16 +65,19 @@ export default function Card({ card, color, hasVoted, votePending, myReactions, 
         )}
       </div>
       <div className="card-footer">
-        <button
-          className={`vote-btn${card.votes > 0 ? ' has-votes' : ''}${hasVoted ? ' my-vote' : ''}`}
-          style={card.votes > 0 ? { '--vote-color': color } : {}}
-          onClick={onVote}
-          disabled={votePending}
-          title={hasVoted ? 'Remove vote' : 'Upvote'}
-        >
-          ▲ {card.votes}
-        </button>
-        <button className="delete-card-btn" onClick={onDelete} title="Delete">✕</button>
+        {card.created_at && <span className="card-time">{timeAgo(card.created_at)}</span>}
+        <div className="card-actions">
+          <button
+            className={`vote-btn${card.votes > 0 ? ' has-votes' : ''}${hasVoted ? ' my-vote' : ''}`}
+            style={card.votes > 0 ? { '--vote-color': color } : {}}
+            onClick={onVote}
+            disabled={votePending}
+            title={hasVoted ? 'Remove vote' : 'Upvote'}
+          >
+            <ArrowUpIcon /> {card.votes}
+          </button>
+          <button className="delete-card-btn" onClick={onDelete} title="Delete card"><XIcon /></button>
+        </div>
       </div>
     </div>
   )

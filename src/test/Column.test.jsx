@@ -29,7 +29,7 @@ describe('Column', () => {
   it('renders the column title and card count', () => {
     renderColumn()
     expect(screen.getByText('Went well')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getByText('2', { selector: '.col-count' })).toBeInTheDocument()
   })
 
   it('renders all cards', () => {
@@ -52,14 +52,14 @@ describe('Column', () => {
 
   it('opens card input when Add a card is clicked', async () => {
     renderColumn()
-    await userEvent.click(screen.getByText('+ Add a card'))
+    await userEvent.click(screen.getByRole('button', { name: /add a card/i }))
     expect(screen.getByPlaceholderText(/what's on your mind/i)).toBeInTheDocument()
   })
 
   it('calls onAddCard with trimmed text and closes input', async () => {
     const onAddCard = vi.fn().mockResolvedValue(undefined)
     renderColumn({ onAddCard })
-    await userEvent.click(screen.getByText('+ Add a card'))
+    await userEvent.click(screen.getByRole('button', { name: /add a card/i }))
     await userEvent.type(screen.getByPlaceholderText(/what's on your mind/i), 'New card')
     await userEvent.click(screen.getByRole('button', { name: /add card/i }))
     expect(onAddCard).toHaveBeenCalledWith('col-1', 'New card')
@@ -69,14 +69,14 @@ describe('Column', () => {
   it('submits card on Enter (without shift)', async () => {
     const onAddCard = vi.fn().mockResolvedValue(undefined)
     renderColumn({ onAddCard })
-    await userEvent.click(screen.getByText('+ Add a card'))
+    await userEvent.click(screen.getByRole('button', { name: /add a card/i }))
     await userEvent.type(screen.getByPlaceholderText(/what's on your mind/i), 'New card{Enter}')
     expect(onAddCard).toHaveBeenCalledWith('col-1', 'New card')
   })
 
   it('cancels card input on Escape', async () => {
     renderColumn()
-    await userEvent.click(screen.getByText('+ Add a card'))
+    await userEvent.click(screen.getByRole('button', { name: /add a card/i }))
     await userEvent.keyboard('{Escape}')
     expect(screen.queryByPlaceholderText(/what's on your mind/i)).not.toBeInTheDocument()
   })
@@ -152,14 +152,14 @@ describe('Column', () => {
 
   it('shows confirm modal when delete card is clicked', async () => {
     renderColumn()
-    await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await userEvent.click(screen.getAllByTitle('Delete card')[0])
     expect(screen.getByText('Are you sure you want to delete this card?')).toBeInTheDocument()
   })
 
   it('calls onDeleteCard when confirmed', async () => {
     const onDeleteCard = vi.fn()
     renderColumn({ onDeleteCard })
-    await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await userEvent.click(screen.getAllByTitle('Delete card')[0])
     await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
     expect(onDeleteCard).toHaveBeenCalled()
   })
@@ -167,7 +167,7 @@ describe('Column', () => {
   it('does not call onDeleteCard when cancelled', async () => {
     const onDeleteCard = vi.fn()
     renderColumn({ onDeleteCard })
-    await userEvent.click(screen.getAllByTitle('Delete')[0])
+    await userEvent.click(screen.getAllByTitle('Delete card')[0])
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(onDeleteCard).not.toHaveBeenCalled()
   })

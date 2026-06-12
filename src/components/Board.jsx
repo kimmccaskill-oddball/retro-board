@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { toast } from '../lib/toast'
 import Column from './Column'
 import AddColumnModal from './AddColumnModal'
+import { SunIcon, MoonIcon, LinkIcon, DownloadIcon, PlusIcon, CheckIcon, SortIcon } from './Icons'
 
 const DEFAULT_COLUMNS = [
   { title: 'Went well', color: '#1D9E75' },
@@ -33,6 +35,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
   const [loading, setLoading] = useState(true)
   const [showAddCol, setShowAddCol] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [sortByVotes, setSortByVotes] = useState(false)
   const [votedCards, setVotedCards] = useState(getVotedCards)
   const [pendingVotes, setPendingVotes] = useState(new Set())
   const [myReactions, setMyReactions] = useState(() => {
@@ -103,7 +106,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
   async function addCard(columnId, text) {
     const columnCards = cards.filter(c => c.column_id === columnId)
     if (columnCards.length >= 30) {
-      alert('This column has reached the maximum of 30 cards.')
+      toast('This column has reached the maximum of 30 cards.', 'error')
       return
     }
     const { error } = await supabase.from('cards').insert({
@@ -112,7 +115,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
       text,
       votes: 0,
     })
-    if (error) alert(`Error adding card: ${error.message}`)
+    if (error) toast(`Error adding card: ${error.message}`, 'error')
   }
 
   async function deleteCard(cardId) {
@@ -120,7 +123,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
     const { error } = await supabase.from('cards').delete().eq('id', cardId)
     if (error) {
       setCards(prev => [...prev, cards.find(c => c.id === cardId)].filter(Boolean))
-      alert(`Error deleting card: ${error.message}`)
+      toast(`Error deleting card: ${error.message}`, 'error')
     }
   }
 
@@ -139,7 +142,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
     if (error) {
       setVotedCards(votedCards)
       saveVotedCards(votedCards)
-      alert(`Error voting: ${error.message}`)
+      toast(`Error voting: ${error.message}`, 'error')
     }
   }
 
@@ -163,13 +166,13 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
     if (error) {
       setMyReactions(myReactions)
       localStorage.setItem('retro-reactions', JSON.stringify(myReactions))
-      alert(`Error adding reaction: ${error.message}`)
+      toast(`Error adding reaction: ${error.message}`, 'error')
     }
   }
 
   async function addColumn(title, color) {
     if (columns.length >= 10) {
-      alert('This board has reached the maximum of 10 columns.')
+      toast('This board has reached the maximum of 10 columns.', 'error')
       return
     }
     const maxPos = columns.reduce((m, c) => Math.max(m, c.position), -1)
@@ -179,7 +182,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
       color,
       position: maxPos + 1,
     })
-    if (error) alert(`Error adding column: ${error.message}`)
+    if (error) toast(`Error adding column: ${error.message}`, 'error')
   }
 
   async function updateColumn(colId, updates) {
@@ -196,7 +199,13 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
   function copyLink() {
     navigator.clipboard.writeText(window.location.href)
     setCopied(true)
+    toast('Board link copied to clipboard', 'success')
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  function cardsForColumn(colId) {
+    const list = cards.filter(c => c.column_id === colId)
+    return sortByVotes ? [...list].sort((a, b) => b.votes - a.votes) : list
   }
 
   if (loading) return (
@@ -218,17 +227,25 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
           </div>
         </div>
         <div className="board-header-right">
-          <button className="header-btn" onClick={() => setShowAddCol(true)}>
-            + Add column
+          <button
+            className={`header-btn${sortByVotes ? ' active' : ''}`}
+            onClick={() => setSortByVotes(s => !s)}
+            title={sortByVotes ? 'Show original order' : 'Sort cards by votes'}
+            aria-pressed={sortByVotes}
+          >
+            <SortIcon /><span className="btn-label">Sort by votes</span>
           </button>
-          <button className="header-btn theme-toggle-btn" onClick={onToggleTheme} title="Toggle theme">
-            {theme === 'dark' ? '☀︎' : '☽'}
+          <button className="header-btn" onClick={() => setShowAddCol(true)} title="Add column">
+            <PlusIcon /><span className="btn-label">Add column</span>
           </button>
-          <button className="header-btn" onClick={() => window.print()}>
-            ↓ Export PDF
+          <button className="header-btn icon-only" onClick={onToggleTheme} title="Toggle theme">
+            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
           </button>
-          <button className="header-btn primary" onClick={copyLink}>
-            {copied ? '✓ Copied!' : '⟳ Share link'}
+          <button className="header-btn" onClick={() => window.print()} title="Export as PDF">
+            <DownloadIcon /><span className="btn-label">Export PDF</span>
+          </button>
+          <button className="header-btn primary" onClick={copyLink} title="Copy share link">
+            {copied ? <CheckIcon /> : <LinkIcon />}<span className="btn-label">{copied ? 'Copied!' : 'Share link'}</span>
           </button>
         </div>
       </header>
@@ -239,7 +256,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
             <Column
               key={col.id}
               column={col}
-              cards={cards.filter(c => c.column_id === col.id)}
+              cards={cardsForColumn(col.id)}
               onAddCard={addCard}
               onDeleteCard={deleteCard}
               onVoteCard={voteCard}
