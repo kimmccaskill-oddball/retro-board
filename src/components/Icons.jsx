@@ -78,14 +78,6 @@ export const CheckIcon = ({ size = 15 }) => (
   </svg>
 )
 
-export const SortIcon = ({ size = 15 }) => (
-  <svg {...props(size)}>
-    <path d="m3 16 4 4 4-4" />
-    <path d="M7 20V4" />
-    <path d="M11 4h10M11 8h7M11 12h4" />
-  </svg>
-)
-
 export const AlertIcon = ({ size = 15 }) => (
   <svg {...props(size)}>
     <circle cx="12" cy="12" r="10" />

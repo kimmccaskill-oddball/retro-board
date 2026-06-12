@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { toast } from '../lib/toast'
 import Column from './Column'
 import AddColumnModal from './AddColumnModal'
-import { SunIcon, MoonIcon, LinkIcon, DownloadIcon, PlusIcon, CheckIcon, SortIcon } from './Icons'
+import { SunIcon, MoonIcon, LinkIcon, DownloadIcon, PlusIcon, CheckIcon } from './Icons'
 
 const DEFAULT_COLUMNS = [
   { title: 'Went well', color: '#1D9E75' },
@@ -35,7 +35,6 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
   const [loading, setLoading] = useState(true)
   const [showAddCol, setShowAddCol] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [sortByVotes, setSortByVotes] = useState(false)
   const [votedCards, setVotedCards] = useState(getVotedCards)
   const [pendingVotes, setPendingVotes] = useState(new Set())
   const [myReactions, setMyReactions] = useState(() => {
@@ -203,11 +202,6 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  function cardsForColumn(colId) {
-    const list = cards.filter(c => c.column_id === colId)
-    return sortByVotes ? [...list].sort((a, b) => b.votes - a.votes) : list
-  }
-
   if (loading) return (
     <div className="loading-screen">
       <div className="loading-spinner" />
@@ -227,14 +221,6 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
           </div>
         </div>
         <div className="board-header-right">
-          <button
-            className={`header-btn${sortByVotes ? ' active' : ''}`}
-            onClick={() => setSortByVotes(s => !s)}
-            title={sortByVotes ? 'Show original order' : 'Sort cards by votes'}
-            aria-pressed={sortByVotes}
-          >
-            <SortIcon /><span className="btn-label">Sort by votes</span>
-          </button>
           <button className="header-btn" onClick={() => setShowAddCol(true)} title="Add column">
             <PlusIcon /><span className="btn-label">Add column</span>
           </button>
@@ -256,7 +242,7 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
             <Column
               key={col.id}
               column={col}
-              cards={cardsForColumn(col.id)}
+              cards={cards.filter(c => c.column_id === col.id)}
               onAddCard={addCard}
               onDeleteCard={deleteCard}
               onVoteCard={voteCard}
