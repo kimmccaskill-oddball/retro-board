@@ -80,6 +80,8 @@ npm test
 
 ---
 
+8/18/2026 - Keeping GH actions alive by editing README
+
 ## Supabase free tier notes
 
 - Free projects **pause after 1 week of inactivity** — a daily GitHub Actions cron job (`keep-alive.yml`) prevents this
