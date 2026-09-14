@@ -52,3 +52,30 @@ create policy "Public read cards" on cards for select using (true);
 create policy "Public insert cards" on cards for insert with check (true);
 create policy "Public update cards" on cards for update using (true);
 create policy "Public delete cards" on cards for delete using (true);
+
+-- Atomic vote/reaction counters. Incrementing in the database (instead of the client
+-- writing an absolute count it computed from possibly stale local state) prevents
+-- rapid clicks and simultaneous voters from inflating or losing counts.
+create or replace function vote_card(card_id uuid, delta integer)
+returns cards
+language sql
+as $$
+  update cards
+  set votes = greatest(0, votes + greatest(-1, least(1, delta)))
+  where id = card_id
+  returning *;
+$$;
+
+create or replace function react_to_card(card_id uuid, emoji text, delta integer)
+returns cards
+language sql
+as $$
+  update cards
+  set reactions = case
+    when coalesce((reactions->>emoji)::int, 0) + greatest(-1, least(1, delta)) > 0
+      then jsonb_set(reactions, array[emoji], to_jsonb(coalesce((reactions->>emoji)::int, 0) + greatest(-1, least(1, delta))))
+    else reactions - emoji
+  end
+  where id = card_id
+  returning *;
+$$;

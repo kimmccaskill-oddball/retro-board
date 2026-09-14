@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, beforeEach, describe, it, expect } from 'vitest'
 import Board from '../components/Board'
@@ -23,6 +23,7 @@ vi.mock('../lib/supabase', () => {
   }
   const supabase = {
     from: vi.fn(),
+    rpc: vi.fn(),
     channel: vi.fn(() => makeChannel()),
     removeChannel: vi.fn(),
   }
@@ -223,6 +224,84 @@ describe('Board', () => {
     await waitFor(() => screen.getByText('Went well'))
     const fullBtn = screen.getAllByText('Column full')[0]
     expect(fullBtn).toBeDisabled()
+  })
+
+  describe('votes and reactions', () => {
+    beforeEach(() => localStorage.clear())
+
+    function deferred() {
+      let resolve
+      const promise = new Promise(r => { resolve = r })
+      return { promise, resolve }
+    }
+
+    it('sends a single atomic increment when the vote button is clicked rapidly', async () => {
+      const pending = deferred()
+      supabase.rpc.mockReturnValue(pending.promise)
+      render(<Board boardId="board-1" board={board} />)
+      await waitFor(() => screen.getByText('Slow reviews'))
+
+      const voteBtn = within(screen.getByText('Slow reviews').closest('.card')).getByTitle('Upvote')
+      act(() => { voteBtn.click(); voteBtn.click(); voteBtn.click() })
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(1)
+      expect(supabase.rpc).toHaveBeenCalledWith('vote_card', { card_id: 'card-2', delta: 1 })
+
+      await act(async () => pending.resolve({ data: { ...mockCards[1], votes: 1 }, error: null }))
+      const card = screen.getByText('Slow reviews').closest('.card')
+      await waitFor(() => expect(within(card).getByTitle('Remove vote')).toHaveTextContent('1'))
+    })
+
+    it('sends a decrement when removing a vote instead of writing a stale count', async () => {
+      supabase.rpc.mockResolvedValueOnce({ data: { ...mockCards[1], votes: 1 }, error: null })
+      render(<Board boardId="board-1" board={board} />)
+      await waitFor(() => screen.getByText('Slow reviews'))
+      const card = () => screen.getByText('Slow reviews').closest('.card')
+
+      await userEvent.click(within(card()).getByTitle('Upvote'))
+      await waitFor(() => within(card()).getByTitle('Remove vote'))
+
+      supabase.rpc.mockResolvedValueOnce({ data: { ...mockCards[1], votes: 0 }, error: null })
+      await userEvent.click(within(card()).getByTitle('Remove vote'))
+
+      expect(supabase.rpc).toHaveBeenLastCalledWith('vote_card', { card_id: 'card-2', delta: -1 })
+      await waitFor(() => expect(within(card()).getByTitle('Upvote')).toHaveTextContent('0'))
+    })
+
+    it('rolls back the vote and shows an error toast on failure', async () => {
+      supabase.rpc.mockResolvedValue({ data: null, error: { message: 'Vote failed' } })
+      render(<Board boardId="board-1" board={board} />)
+      await waitFor(() => screen.getByText('Slow reviews'))
+      const card = screen.getByText('Slow reviews').closest('.card')
+
+      await userEvent.click(within(card).getByTitle('Upvote'))
+      await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringContaining('Vote failed'), 'error'))
+      expect(within(card).getByTitle('Upvote')).toBeInTheDocument()
+    })
+
+    it('sends a single atomic increment when a reaction chip is clicked rapidly', async () => {
+      const pending = deferred()
+      supabase.rpc.mockReturnValue(pending.promise)
+      const cardWithReaction = { ...mockCards[1], reactions: { '👍': 1 } }
+      supabase.from.mockImplementation(table => {
+        const chain = { select: vi.fn(), eq: vi.fn(), order: vi.fn() }
+        chain.select.mockReturnValue(chain)
+        chain.eq.mockReturnValue(chain)
+        chain.order.mockResolvedValue({ data: table === 'columns' ? mockColumns : [cardWithReaction] })
+        return chain
+      })
+      render(<Board boardId="board-1" board={board} />)
+      await waitFor(() => screen.getByText('👍 1'))
+
+      const chip = screen.getByText('👍 1')
+      act(() => { chip.click(); chip.click(); chip.click() })
+
+      expect(supabase.rpc).toHaveBeenCalledTimes(1)
+      expect(supabase.rpc).toHaveBeenCalledWith('react_to_card', { card_id: 'card-2', emoji: '👍', delta: 1 })
+
+      await act(async () => pending.resolve({ data: { ...cardWithReaction, reactions: { '👍': 2 } }, error: null }))
+      await waitFor(() => expect(screen.getByText('👍 2')).toHaveClass('my-reaction'))
+    })
   })
 
   it('opens AddColumnModal when Add column is clicked', async () => {

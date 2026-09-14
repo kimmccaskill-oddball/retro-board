@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { toast } from '../lib/toast'
 import Column from './Column'
@@ -41,6 +41,14 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
     try { return JSON.parse(localStorage.getItem('retro-reactions') || '{}') }
     catch { return {} }
   })
+  // Refs (not state) so a second click fired before React re-renders is still rejected.
+  // Counts are incremented atomically in the DB, so the only thing to protect here is
+  // that each toggle of the user's own vote/reaction is sent exactly once.
+  const inFlight = useRef(new Set())
+  const votedRef = useRef(votedCards)
+  votedRef.current = votedCards
+  const reactionsRef = useRef(myReactions)
+  reactionsRef.current = myReactions
 
   useEffect(() => {
     initBoard()
@@ -126,47 +134,61 @@ export default function Board({ boardId, board, theme, onToggleTheme }) {
     }
   }
 
+  function applyCardRow(row) {
+    if (row) setCards(prev => prev.map(c => c.id === row.id ? row : c))
+  }
+
+  function setVoted(cardId, voted) {
+    setVotedCards(prev => {
+      const next = new Set(prev)
+      if (voted) next.add(cardId)
+      else next.delete(cardId)
+      saveVotedCards(next)
+      return next
+    })
+  }
+
+  function setReacted(cardId, emoji, reacted) {
+    setMyReactions(prev => {
+      const current = (prev[cardId] || []).filter(e => e !== emoji)
+      const next = { ...prev, [cardId]: reacted ? [...current, emoji] : current }
+      localStorage.setItem('retro-reactions', JSON.stringify(next))
+      return next
+    })
+  }
+
   async function voteCard(card) {
-    if (pendingVotes.has(card.id)) return
+    const key = `vote:${card.id}`
+    if (inFlight.current.has(key)) return
+    inFlight.current.add(key)
     setPendingVotes(prev => new Set([...prev, card.id]))
-    const hasVoted = votedCards.has(card.id)
-    const newVotes = Math.max(0, hasVoted ? card.votes - 1 : card.votes + 1)
-    const newVotedCards = new Set(votedCards)
-    if (hasVoted) newVotedCards.delete(card.id)
-    else newVotedCards.add(card.id)
-    setVotedCards(newVotedCards)
-    saveVotedCards(newVotedCards)
-    const { error } = await supabase.from('cards').update({ votes: newVotes }).eq('id', card.id)
-    setPendingVotes(prev => { const s = new Set(prev); s.delete(card.id); return s })
+    const hasVoted = votedRef.current.has(card.id)
+    setVoted(card.id, !hasVoted)
+    const { data, error } = await supabase.rpc('vote_card', { card_id: card.id, delta: hasVoted ? -1 : 1 })
     if (error) {
-      setVotedCards(votedCards)
-      saveVotedCards(votedCards)
+      setVoted(card.id, hasVoted)
       toast(`Error voting: ${error.message}`, 'error')
+    } else {
+      applyCardRow(data)
     }
+    inFlight.current.delete(key)
+    setPendingVotes(prev => { const s = new Set(prev); s.delete(card.id); return s })
   }
 
   async function reactToCard(card, emoji) {
-    const cardReactions = myReactions[card.id] || []
-    const hasReacted = cardReactions.includes(emoji)
-    const reactions = { ...(card.reactions || {}) }
-    if (hasReacted) {
-      reactions[emoji] = Math.max(0, (reactions[emoji] || 1) - 1)
-      if (reactions[emoji] === 0) delete reactions[emoji]
-    } else {
-      reactions[emoji] = (reactions[emoji] || 0) + 1
-    }
-    const newMyReactions = {
-      ...myReactions,
-      [card.id]: hasReacted ? cardReactions.filter(e => e !== emoji) : [...cardReactions, emoji],
-    }
-    setMyReactions(newMyReactions)
-    localStorage.setItem('retro-reactions', JSON.stringify(newMyReactions))
-    const { error } = await supabase.from('cards').update({ reactions }).eq('id', card.id)
+    const key = `react:${card.id}:${emoji}`
+    if (inFlight.current.has(key)) return
+    inFlight.current.add(key)
+    const hasReacted = (reactionsRef.current[card.id] || []).includes(emoji)
+    setReacted(card.id, emoji, !hasReacted)
+    const { data, error } = await supabase.rpc('react_to_card', { card_id: card.id, emoji, delta: hasReacted ? -1 : 1 })
     if (error) {
-      setMyReactions(myReactions)
-      localStorage.setItem('retro-reactions', JSON.stringify(myReactions))
+      setReacted(card.id, emoji, hasReacted)
       toast(`Error adding reaction: ${error.message}`, 'error')
+    } else {
+      applyCardRow(data)
     }
+    inFlight.current.delete(key)
   }
 
   async function addColumn(title, color) {
