@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { timeAgo } from '../lib/timeAgo'
 import { ArrowUpIcon, XIcon } from './Icons'
 
-const EMOJIS = ['👍', '👎', '❤️', '😄', '🎉', '🤔', '😬']
+const EMOJIS = ['👍', '👎', '❤️', '😄', '🎉', '🤔', '😬', '💯']
 
 export default function Card({ card, color, hasVoted, votePending, myReactions, onDelete, onVote, onReact }) {
   const [pickerOpen, setPickerOpen] = useState(false)
